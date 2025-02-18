@@ -15,11 +15,11 @@ import logging
 import os
 import sys
 import threading
+import time
 from contextvars import ContextVar
-from datetime import datetime
 from logging import Formatter, Handler, NOTSET
 from logging.handlers import RotatingFileHandler
-from typing import Dict, List, Mapping, Optional
+from typing import Dict, List, Mapping, Optional, Sequence, Union
 
 try:
     from tqdm import tqdm
@@ -71,14 +71,14 @@ def get_log_context():
     return thread_local.co_local
 
 
-def log_request(fields=("trace_id", "request_id")):
+def log_request(*fields, **fields_with_default):
     def decorator(fn):
         if not inspect.iscoroutinefunction(fn):
             @functools.wraps(fn)
             def _wrapper(*args, **kwargs):
                 log_context = thread_local.co_local
                 log_context.clear()
-                for field, value in _find_log_items(fields, args, kwargs):
+                for field, value in _find_log_items(fields, fields_with_default, args, kwargs):
                     log_context[field] = value
                 return fn(*args, **kwargs)
         else:
@@ -86,7 +86,7 @@ def log_request(fields=("trace_id", "request_id")):
             async def _wrapper(*args, **kwargs):
                 log_context = thread_local.co_local
                 log_context.clear()
-                for field, value in _find_log_items(fields, args, kwargs):
+                for field, value in _find_log_items(fields, fields_with_default, args, kwargs):
                     log_context[field] = value
                 return await fn(*args, **kwargs)
 
@@ -95,9 +95,10 @@ def log_request(fields=("trace_id", "request_id")):
     return decorator
 
 
-def _find_log_items(fields: List[str], args: tuple, kwargs: dict):
+def _find_log_items(fields: List[str], fields_with_default: dict, args: tuple, kwargs: dict):
     args = [*args, *kwargs.values()]
-    for field in fields:
+    all_fields = set(fields).union(fields_with_default.keys())
+    for field in all_fields:
         if field in kwargs:
             yield field, kwargs[field]
         else:
@@ -107,38 +108,51 @@ def _find_log_items(fields: List[str], args: tuple, kwargs: dict):
                     break
                 except AttributeError:
                     pass
+            else:
+                if field in fields_with_default:
+                    yield field, fields_with_default[field]
 
 
-class JSONFormatter(Formatter):
+class ContextJSONFormatter(Formatter):
 
     def format(self, record):
         context: dict = thread_local.co_local
 
-        create_time = datetime.strptime(self.formatTime(record), "%Y-%m-%d %H:%M:%S,%f")
-        message = record.getMessage()
+        message = record.msg
         extra_message = {}
         if isinstance(message, Mapping) and "message" in message:
             extra_message = {**message}
             message = extra_message["message"]
             del extra_message["message"]
-
+        message_type = extra_message.pop("message_type") if "message_type" in extra_message else "common"
         log_data = {
-            # "uid": uid,
-            # "session_id": session_id,
-            # "turn": turn,
-            "time": create_time.strftime("%Y-%m-%d %H:%M:%S"),
+            "create_time": self.formatTime(record),
             "level": record.levelname,
+            # 通过上下文变量控制trace_id
             "trace_id": context.get("trace_id", None),
-            "code": f"{record.filename}:{record.lineno}:{record.funcName}",
-            # "message_source": getattr(record, "message_source", "planning_service"),  # 控制不同源
-            # "message_type": getattr(record, "message_type", "common"),  # 控制不同log类型
-            # "data": getattr(record, "data", {}),
+            "line_info": f"{record.filename}:{record.lineno}:{record.funcName}",
+            # 日志消息
             "message": message,
+            # 通过上下文变量控制不同源, 比如对话，额外算法服务: 历史标题，欢迎语，Planning等
+            "message_source": context.get("message_source", "chat_log"),
+            # 控制不同log类型，便于筛选日志数据, 比如tool, llm, turn等
+            "message_type": message_type,
             **extra_message
         }
-
-        output_log = json.dumps(log_data, ensure_ascii=False)
+        try:
+            output_log = json.dumps(log_data, ensure_ascii=False)
+        except TypeError:
+            log_data["message"] = str(log_data["message"])
+            output_log = json.dumps(log_data, ensure_ascii=False)
         return output_log
+
+    def formatTime(self, record):
+        """to match mysql 'datetime(3)' format"""
+        ct = self.converter(record.created)
+        s = time.strftime(self.default_time_format, ct)
+        default_msec_format = '%s.%03d'
+        s = default_msec_format % (s, record.msecs)
+        return s
 
 
 class Logger(logging.Logger):
@@ -151,12 +165,11 @@ class Logger(logging.Logger):
             log_file: str = None,
             max_size: int = 1024 * 1024 * 10,
             backup_count: int = 3,
-            formatter: Formatter = JSONFormatter(),
+            formatter: Formatter = ContextJSONFormatter()
     ):
         super().__init__(name, level)
         self.propagate = False
         self.warning_once = functools.lru_cache(self.warning)
-
         if log_file:
             log_dir = os.path.dirname(log_file)
             if log_dir and not os.path.exists(log_dir):
@@ -172,13 +185,88 @@ class Logger(logging.Logger):
             console_handler.setFormatter(formatter)
             self.addHandler(console_handler)
 
-    def turn_start(self):
-        turn_id = thread_local.co_local.get("turn_id", "?")
-        self._log(logging.INFO, f"TurnStart[{turn_id}]", ())
+    def service_start(self):
+        self._log(logging.INFO, {"message": "service_start", "message_type": "on_service_start"}, (), stacklevel=2)
 
-    def turn_end(self):
-        turn_id = thread_local.co_local.get("turn_id", "?")
-        self._log(logging.INFO, f"TurnEnd[{turn_id}]", ())
+    def service_end(self):
+        self._log(logging.INFO, {"message": "service_end", "message_type": "on_service_end"}, (), stacklevel=2)
+
+    def turn_start(self, request: Mapping):
+        self._log(logging.INFO, {"message": request, "message_type": "on_turn_start"}, (), stacklevel=2)
+
+    def turn_end(self, response: Mapping):
+        self._log(logging.INFO, {"message": response, "message_type": "on_turn_end"}, (), stacklevel=2)
+
+    def tool_start(self, tool_name: str, inputs: Mapping):
+        self._log(
+            logging.INFO,
+            {"message": {"func_name": tool_name, "inputs": inputs}, "message_type": "on_tool_start"},
+            (),
+            stacklevel=2
+        )
+
+    def tool_end(self, tool_name: str, output: Mapping, execute_time: float = None):
+        self._log(
+            logging.INFO,
+            {
+                "message": {"func_name": tool_name, "output": output, "duration": round(execute_time, 3)},
+                "message_type": "on_tool_end"
+            },
+            (),
+            stacklevel=2
+        )
+
+    def llm_start(
+        self,
+        llm_chain_name: str,
+        messages: Sequence[Mapping],
+        template_info: Mapping,
+        model_kwargs: Mapping = None
+    ):
+        log_info_dict = {
+            "func_name": llm_chain_name,
+            "messages": messages,
+            "template_info": template_info,
+            "model_kwargs": model_kwargs
+        }
+        self._log(
+            logging.INFO,
+            {
+                "message": log_info_dict,
+                "message_type": "on_llm_start"
+            },
+            (),
+            stacklevel=2
+        )
+
+    def llm_end(
+        self,
+        llm_name: str,
+        content: str,
+        execute_time: float,
+        completion_tokens: int = None,
+        prompt_tokens: int = None,
+        role: str = "assistant"
+    ):
+        log_info_dict = {
+            "func_name": llm_name,
+            "response": {"role": role, "content": content},
+            "duration": round(execute_time, 3),
+            "generated_tokens": completion_tokens,
+            "prompt_tokens": prompt_tokens
+        }
+        self._log(
+            logging.INFO,
+            {
+                "message": log_info_dict,
+                "message_type": "on_llm_end"
+            },
+            (),
+            stacklevel=2
+        )
+
+    def agent(self, message: Union[str, Mapping]):
+        self._log(logging.INFO, {"masssage": message, "message_type": "agent"})
 
 
 logger = Logger("libentry.logger")
