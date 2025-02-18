@@ -185,6 +185,12 @@ class Logger(logging.Logger):
             console_handler.setFormatter(formatter)
             self.addHandler(console_handler)
 
+    def track_start(self, message: Union[str, Mapping], message_type: str = "on_track_start"):
+        self._log(logging.INFO, {"message": message, "message_type": message_type}, (), stacklevel=2)
+
+    def track_end(self, message: Union[str, Mapping], message_type: str = "on_track_end"):
+        self._log(logging.INFO, {"message": message, "message_type": message_type}, (), stacklevel=2)
+
     def service_start(self):
         self._log(logging.INFO, {"message": "service_start", "message_type": "on_service_start"}, (), stacklevel=2)
 
@@ -198,22 +204,15 @@ class Logger(logging.Logger):
         self._log(logging.INFO, {"message": response, "message_type": "on_turn_end"}, (), stacklevel=2)
 
     def tool_start(self, tool_name: str, inputs: Mapping):
-        self._log(
-            logging.INFO,
-            {"message": {"func_name": tool_name, "inputs": inputs}, "message_type": "on_tool_start"},
-            (),
-            stacklevel=2
+        self.track_start(
+            message={"message": {"func_name": tool_name, "inputs": inputs}},
+            message_type="on_tool_start"
         )
 
-    def tool_end(self, tool_name: str, output: Mapping, execute_time: float = None):
-        self._log(
-            logging.INFO,
-            {
-                "message": {"func_name": tool_name, "output": output, "duration": round(execute_time, 3)},
-                "message_type": "on_tool_end"
-            },
-            (),
-            stacklevel=2
+    def tool_end(self, tool_name: str, output: Mapping, execute_time: float):
+        self.track_end(
+            message={"func_name": tool_name, "output": output, "duration": round(execute_time, 3)},
+            message_type="on_tool_end"
         )
 
     def llm_start(
@@ -229,14 +228,9 @@ class Logger(logging.Logger):
             "template_info": template_info,
             "model_kwargs": model_kwargs
         }
-        self._log(
-            logging.INFO,
-            {
-                "message": log_info_dict,
-                "message_type": "on_llm_start"
-            },
-            (),
-            stacklevel=2
+        self.track_start(
+            message=log_info_dict,
+            message_type="on_llm_start"
         )
 
     def llm_end(
@@ -251,22 +245,14 @@ class Logger(logging.Logger):
         log_info_dict = {
             "func_name": llm_name,
             "response": {"role": role, "content": content},
-            "duration": round(execute_time, 3),
             "generated_tokens": completion_tokens,
-            "prompt_tokens": prompt_tokens
+            "prompt_tokens": prompt_tokens,
+            "duration": round(execute_time, 3)
         }
-        self._log(
-            logging.INFO,
-            {
-                "message": log_info_dict,
-                "message_type": "on_llm_end"
-            },
-            (),
-            stacklevel=2
-        )
+        self.track_end(message=log_info_dict, message_type="on_llm_end")
 
     def agent(self, message: Union[str, Mapping]):
-        self._log(logging.INFO, {"masssage": message, "message_type": "agent"})
+        self._log(logging.INFO, {"message": message, "message_type": "agent"}, ())
 
 
 logger = Logger("libentry.logger")
