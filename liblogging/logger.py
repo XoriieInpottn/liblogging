@@ -185,11 +185,15 @@ class Logger(logging.Logger):
             console_handler.setFormatter(formatter)
             self.addHandler(console_handler)
 
-    def track_start(self, message: Union[str, Mapping], message_type: str = "on_track_start"):
-        self._log(logging.INFO, {"message": message, "message_type": message_type}, (), stacklevel=2)
+    def track_start(self, message: Union[str, Mapping], message_type: str = "on_track_start", **kwargs):
+        self._log(
+            logging.INFO, {"message": message, "message_type": message_type, **kwargs}, (), stacklevel=2
+        )
 
-    def track_end(self, message: Union[str, Mapping], message_type: str = "on_track_end"):
-        self._log(logging.INFO, {"message": message, "message_type": message_type}, (), stacklevel=2)
+    def track_end(self, message: Union[str, Mapping], message_type: str = "on_track_end", **kwargs):
+        self._log(
+            logging.INFO, {"message": message, "message_type": message_type, **kwargs}, (), stacklevel=2
+        )
 
     def service_start(self):
         self._log(logging.INFO, {"message": "service_start", "message_type": "on_service_start"}, (), stacklevel=2)
@@ -197,22 +201,24 @@ class Logger(logging.Logger):
     def service_end(self):
         self._log(logging.INFO, {"message": "service_end", "message_type": "on_service_end"}, (), stacklevel=2)
 
-    def turn_start(self, request: Mapping):
-        self._log(logging.INFO, {"message": request, "message_type": "on_turn_start"}, (), stacklevel=2)
+    def turn_start(self, request: Mapping, **kwargs):
+        self.track_start(message=request, message_type="on_turn_start", **kwargs)
 
-    def turn_end(self, response: Mapping):
-        self._log(logging.INFO, {"message": response, "message_type": "on_turn_end"}, (), stacklevel=2)
+    def turn_end(self, response: Mapping, **kwargs):
+        self.track_end(message=response, message_type="on_turn_end", **kwargs)
 
-    def tool_start(self, tool_name: str, inputs: Mapping):
+    def tool_start(self, tool_name: str, inputs: Mapping, **kwargs):
         self.track_start(
-            message={"message": {"func_name": tool_name, "inputs": inputs}},
-            message_type="on_tool_start"
+            message={"func_name": tool_name, "inputs": inputs},
+            message_type="on_tool_start",
+            **kwargs
         )
 
-    def tool_end(self, tool_name: str, output: Mapping, execute_time: float):
+    def tool_end(self, tool_name: str, output: Mapping, execute_time: float, **kwargs):
         self.track_end(
             message={"func_name": tool_name, "output": output, "duration": round(execute_time, 3)},
-            message_type="on_tool_end"
+            message_type="on_tool_end",
+            **kwargs
         )
 
     def llm_start(
@@ -220,7 +226,8 @@ class Logger(logging.Logger):
         llm_chain_name: str,
         messages: Sequence[Mapping],
         template_info: Mapping,
-        model_kwargs: Mapping = None
+        model_kwargs: Mapping = None,
+        **kwargs
     ):
         log_info_dict = {
             "func_name": llm_chain_name,
@@ -230,7 +237,8 @@ class Logger(logging.Logger):
         }
         self.track_start(
             message=log_info_dict,
-            message_type="on_llm_start"
+            message_type="on_llm_start",
+            **kwargs
         )
 
     def llm_end(
@@ -240,7 +248,8 @@ class Logger(logging.Logger):
         execute_time: float,
         completion_tokens: int = None,
         prompt_tokens: int = None,
-        role: str = "assistant"
+        role: str = "assistant",
+        **kwargs
     ):
         log_info_dict = {
             "func_name": llm_name,
@@ -249,10 +258,10 @@ class Logger(logging.Logger):
             "prompt_tokens": prompt_tokens,
             "duration": round(execute_time, 3)
         }
-        self.track_end(message=log_info_dict, message_type="on_llm_end")
+        self.track_end(message=log_info_dict, message_type="on_llm_end", **kwargs)
 
-    def agent(self, message: Union[str, Mapping]):
-        self._log(logging.INFO, {"message": message, "message_type": "agent"}, ())
+    def agent(self, message: Union[str, Mapping], **kwargs):
+        self._log(logging.INFO, {"message": message, "message_type": "agent", **kwargs}, ())
 
 
 logger = Logger("libentry.logger")
