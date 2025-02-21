@@ -12,7 +12,7 @@ if __name__ == '__main__':
         packages=[
             'liblogging',
         ],
-        version='0.1.2',
+        version='0.1.3',
         description='Utilities for logging and sending logs.',
         long_description_content_type='text/markdown',
         long_description=long_description,
