@@ -185,14 +185,18 @@ class Logger(logging.Logger):
             console_handler.setFormatter(formatter)
             self.addHandler(console_handler)
 
-    def track_start(self, message: Union[str, Mapping], message_type: str = "on_track_start", **kwargs):
+    def track_start(
+        self, message: Union[str, Mapping], message_type: str = "on_track_start", stacklevel: int = 2, **kwargs
+    ):
         self._log(
-            logging.INFO, {"message": message, "message_type": message_type, **kwargs}, (), stacklevel=2
+            logging.INFO, {"message": message, "message_type": message_type, **kwargs}, (), stacklevel=stacklevel
         )
 
-    def track_end(self, message: Union[str, Mapping], message_type: str = "on_track_end", **kwargs):
+    def track_end(
+        self, message: Union[str, Mapping], message_type: str = "on_track_end", stacklevel: int = 2, **kwargs
+    ):
         self._log(
-            logging.INFO, {"message": message, "message_type": message_type, **kwargs}, (), stacklevel=2
+            logging.INFO, {"message": message, "message_type": message_type, **kwargs}, (), stacklevel=stacklevel
         )
 
     def service_start(self):
@@ -202,15 +206,16 @@ class Logger(logging.Logger):
         self._log(logging.INFO, {"message": "service_end", "message_type": "on_service_end"}, (), stacklevel=2)
 
     def turn_start(self, request: Mapping, **kwargs):
-        self.track_start(message=request, message_type="on_turn_start", **kwargs)
+        self.track_start(message=request, message_type="on_turn_start", stacklevel=3, **kwargs)
 
     def turn_end(self, response: Mapping, **kwargs):
-        self.track_end(message=response, message_type="on_turn_end", **kwargs)
+        self.track_end(message=response, message_type="on_turn_end", stacklevel=3, **kwargs)
 
     def tool_start(self, tool_name: str, inputs: Mapping, **kwargs):
         self.track_start(
             message={"func_name": tool_name, "inputs": inputs},
             message_type="on_tool_start",
+            stacklevel=3,
             **kwargs
         )
 
@@ -218,6 +223,7 @@ class Logger(logging.Logger):
         self.track_end(
             message={"func_name": tool_name, "output": output, "duration": round(execute_time, 3)},
             message_type="on_tool_end",
+            stacklevel=3,
             **kwargs
         )
 
@@ -238,6 +244,7 @@ class Logger(logging.Logger):
         self.track_start(
             message=log_info_dict,
             message_type="on_llm_start",
+            stacklevel=3,
             **kwargs
         )
 
@@ -258,7 +265,7 @@ class Logger(logging.Logger):
             "prompt_tokens": prompt_tokens,
             "duration": round(execute_time, 3)
         }
-        self.track_end(message=log_info_dict, message_type="on_llm_end", **kwargs)
+        self.track_end(message=log_info_dict, message_type="on_llm_end", stacklevel=3, **kwargs)
 
     def agent(self, message: Union[str, Mapping], **kwargs):
         self._log(logging.INFO, {"message": message, "message_type": "agent", **kwargs}, ())
