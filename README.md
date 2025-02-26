@@ -1,10 +1,13 @@
 # liblogging
 
 Utilities for logging and sending logs.
+```shell
+pip install liblogging
+```
 
 ## 🌟Feature
 ### 统一日志格式记录
-统一了当前agent的日志记录格式，也可自己基于默认格式进行拓展
+统一了当前agent的日志记录格式，也可自己基于默认格式进行拓展。
 当前记录的信息和对应的key如下：
 ```python
 {
@@ -24,7 +27,7 @@ Utilities for logging and sending logs.
 ```
 
 ### 配置上下文变量，无须重复传参显示记录
-通过装饰器形式, 指定需要配置的全局上下文变量。仅需在整个程序/服务入口配置一次即可
+通过装饰器形式, 指定需要配置的全局上下文变量。仅需在整个程序/服务入口配置一次即可。
 
 service1.py
 ```python
@@ -38,7 +41,8 @@ class Request(BaseModel):
     name: str
     trace_id: str
 
-#在主程序入口配置了trace_id这一全局上下文变量，会通过函数入参对该字段进行赋值，后续在该服务下的其他程序logger.info时会读取这一变量并记录下来。同时也支持以关键字参数配置默认的message_source。
+#在主程序入口配置了trace_id这一全局上下文变量，会通过函数入参对该字段进行赋值，后续在该服务下的其他程序logger.info时会读取这一变量并记录下来。
+#同时也支持以关键字参数配置默认的message_source。
 @log_request("trace_id", message_source="demo")
 def your_service_entry(request: Request):
     logger.info("Processing request")
@@ -54,7 +58,7 @@ def test(name):
 ```
 
 ### 重定向并发送到消息队列
-以默认集成的kafka为例，可将上述统一日志格式记录的形式发送至kafka.
+以默认集成的kafka为例，可将上述统一日志格式记录的形式发送至kafka。
 
 kafka 配置文件格式：
 ```json
@@ -70,13 +74,15 @@ kafka 配置文件格式：
 }
 ```
 
-使用形式
+使用形式:
 ```shell
-python -m module.new_agent.mall_agent_service 2>&1 | tee {log_file_path} | liblogging_collector --config-path {your_kafka_path}  --ssl-cafile {your_ssl_cafile_path} --send-kafka
+python service 2>&1 | tee {log_file_path} | liblogging_collector --config-path {your_kafka_path}  --ssl-cafile {your_ssl_cafile_path} --send-kafka
 ```
+tee {log_file_path} 可以将你的程序记录（输出+错误）重定向到文件中（可选）。
+`liblogging/sending/log_collector.py`为`liblogging_collector`的源代码地址。
 
 ## 📋Example
-增加额外记录字段信息，以及搭配[libentry](https://github.com/XoriieInpottn/libentry)使用的样例见 [example](example)
+增加额外记录字段信息，以及搭配[libentry](https://github.com/XoriieInpottn/libentry)使用的样例见 [example](example)。
 
 
 ## 💡Tips
