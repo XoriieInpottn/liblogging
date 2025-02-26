@@ -18,7 +18,7 @@ if __name__ == '__main__':
                 'liblogging_collector = liblogging.sending.log_collector:main'
             ]
         },
-        version='0.1.9',
+        version='0.1.10',
         description='Utilities for logging and sending logs.',
         long_description_content_type='text/markdown',
         long_description=long_description,

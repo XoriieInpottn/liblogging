@@ -8,7 +8,7 @@ except ImportError:
     # 如果导入失败，提示用户安装 kafka-python 包
     print("错误：未找到 'kafka' 模块。")
     print("请运行以下命令安装所需的依赖：")
-    print("pip install kafka-python")
+    print("pip install kafka-python==2.0.2")
     import sys
     sys.exit(1)
 
