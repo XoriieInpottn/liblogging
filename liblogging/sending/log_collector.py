@@ -88,7 +88,7 @@ class LogCollector:
                 print(f"Unexpected error: {e}", file=sys.stderr)
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--send-kafka", action='store_true', default=False)
     parser.add_argument("--config-path", type=str, required=True, help="Path to Kafka config json file")
@@ -109,3 +109,7 @@ if __name__ == "__main__":
     log_collector.collect(
         send_kafka=args.send_kafka, chat_env=args.env, use_default_process=args.use_default_process
     )
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

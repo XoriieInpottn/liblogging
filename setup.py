@@ -11,8 +11,14 @@ if __name__ == '__main__':
         name='liblogging',
         packages=[
             'liblogging',
+            'liblogging.sending',
         ],
-        version='0.1.7',
+        entry_points={
+            'console_scripts': [
+                'liblogging_collector = liblogging.sending.log_collector:main'
+            ]
+        },
+        version='0.1.8',
         description='Utilities for logging and sending logs.',
         long_description_content_type='text/markdown',
         long_description=long_description,
