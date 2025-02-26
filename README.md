@@ -6,16 +6,15 @@ Utilities for logging and sending logs.
 ### 统一日志格式记录
 统一了当前agent的日志记录格式，也可自己基于默认格式进行拓展
 当前记录的信息和对应的key如下：
-```json
+```python
 {
-    "create_time": 时间戳，默认和mysql列datatime(3)保持一致,
-    "level": like INFO, ERROR, WARNING
-    # 通过上下文变量控制trace_id
-    "trace_id": trace_id for 追溯不同服务,
-    "line_info": f"{record.filename}:{record.lineno}:{record.funcName}",
-    # 日志消息
+    "create_time": "时间戳，默认和mysql列datatime(3)保持一致",
+    "level": "like INFO, ERROR, WARNING",
+    # 通过上下文变量保存trace_id
+    "trace_id": "trace_id for 追溯不同服务的调用链路",
+    "line_info": "{record.filename}:{record.lineno}:{record.funcName}",
     "message": message,
-    # 通过上下文变量控制不同源, 方便接收不同服务源信息, 比如Chat, Welcome, Planning等
+    # 通过上下文变量区分不同源, 方便接收不同服务源信息, 比如Chat, Welcome, Planning等
     "message_source": context.get("message_source", "chat_log"),
     # 控制不同log类型，便于筛选日志数据, 比如tool, llm, turn等
     "message_type": message_type,
