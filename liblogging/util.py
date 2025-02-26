@@ -9,6 +9,7 @@ __all__ = [
 import uuid
 from typing import Dict, Union, Tuple
 from datetime import datetime
+from concurrent.futures import Future, ThreadPoolExecutor
 
 
 def get_trace_id(
@@ -61,3 +62,22 @@ def split_trace_id(trace_id: str, combine_symbol: str = "+") -> Tuple:
         except ValueError:
             pass
     return trace_id, {}
+
+
+class ThreadPoolManager:
+    """Thread pool manager
+    usage:
+    import thread_pool_manager
+    futures = [thread_pool_manager.submit(your function, args), thread_pool_manager.submit(your function, args), ...]
+    for future in futures:
+        print(future.result())
+    """
+
+    def __init__(self, max_workers: int = None):
+        self.executor = ThreadPoolExecutor(max_workers=max_workers)
+
+    def submit(self, func, *args, **kwargs) -> Future:
+        return self.executor.submit(func, *args, **kwargs)
+
+
+thread_pool_manager = ThreadPoolManager()
