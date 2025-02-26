@@ -51,22 +51,18 @@ class LogCollector:
     def collect(
         self, send_kafka: bool = False, chat_env: str = "dev", use_default_process: bool = True
     ):
-        start_time = time.time()
         while True:
             try:
                 line = sys.stdin.readline().strip()
                 if not line:
                     continue
-                print(line)
-                print(round(time.time() - start_time, 3))
-                start_time = time.time()
                 try:
                     if use_default_process:
                         trace_id, message = process_message(line)
                     else:
                         message = json.loads(line)
                         trace_id = message.get("trace_id", "")
-
+                    print(message)
                     if send_kafka and trace_id:
                         print(f"Sending kafka message. env:{chat_env}")
                         thread_pool_manager.submit(
@@ -78,8 +74,8 @@ class LogCollector:
                             key=trace_id,
                             source=message.get("message_source")
                         )
-                except ValueError as e:
-                    pass
+                except ValueError:
+                    print(line)
 
             except EOFError:
                 print("End of input reached. Exiting...", file=sys.stderr)
