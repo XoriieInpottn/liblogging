@@ -30,7 +30,7 @@ pip install liblogging
 ### 配置上下文变量，无须重复传参显示记录
 通过装饰器形式, 指定需要配置的全局上下文变量, 仅需在整个程序/服务入口配置一次即可。
 
-需要注意的是配置的全局上下文变量，根据加入装饰器下的函数入参名称匹配进行更新，推荐使用函数参数定义使用BaseModel。
+需要注意的是配置的全局上下文变量，根据加入装饰器下的函数入参名称匹配进行更新，推荐函数参数定义使用`BaseModel`。
 
 ```python
 主程序/服务: service1.py
@@ -81,7 +81,8 @@ kafka 配置文件格式：
 python service 2>&1 | tee {log_file_path} | liblogging_collector --config-path {your_kafka_path}  --ssl-cafile {your_ssl_cafile_path} --send-kafka
 ```
 tee {log_file_path} 可以将你的程序记录（输出+错误）重定向到文件中（可选）。
-`liblogging/sending/log_collector.py`为`liblogging_collector`的源代码地址。
+[log_collector.py](liblogging/sending/log_collector.py)为`liblogging_collector`的源代码地址。
+`env_name`不指定的话，默认读取`os.environ.get("CHAT_ENV", "dev")`
 
 ## 📋Example
 增加额外记录字段信息，以及搭配[libentry](https://github.com/XoriieInpottn/libentry)使用的样例见 [example](example)。
@@ -89,4 +90,4 @@ tee {log_file_path} 可以将你的程序记录（输出+错误）重定向到�
 
 ## 💡Tips
 
-1. If using Kafka to send messages, please use `kafka-python==2.0.2`.
+1. If using Kafka to send messages, please use `pip install liblogging[collector]`.
