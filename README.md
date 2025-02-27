@@ -81,8 +81,10 @@ kafka 配置文件格式：
 python service 2>&1 | tee {log_file_path} | liblogging_collector --config-path {your_kafka_path}  --ssl-cafile {your_ssl_cafile_path} --send-kafka
 ```
 tee {log_file_path} 可以将你的程序记录（输出+错误）重定向到文件中（可选）。
+
 [log_collector.py](liblogging/sending/log_collector.py)为`liblogging_collector`的源代码地址。
-`env_name`不指定的话，默认读取`os.environ.get("CHAT_ENV", "dev")`
+
+`env_name`不指定的话，默认读取`os.environ.get("CHAT_ENV", "dev")`.
 
 ## 📋Example
 增加额外记录字段信息，以及搭配[libentry](https://github.com/XoriieInpottn/libentry)使用的样例见 [example](example)。
