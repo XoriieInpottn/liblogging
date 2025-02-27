@@ -29,10 +29,11 @@ pip install liblogging
 
 ### 配置上下文变量，无须重复传参显示记录
 通过装饰器形式, 指定需要配置的全局上下文变量, 仅需在整个程序/服务入口配置一次即可。
+
 需要注意的是配置的全局上下文变量，根据加入装饰器下的函数入参名称匹配进行更新，推荐使用函数参数定义使用BaseModel。
-service1.py
+
 ```python
-主程序/服务
+主程序/服务: service1.py
 from pydantic import BaseModel
 
 from liblogging import log_request,logger
@@ -49,9 +50,8 @@ def your_service_entry(request: Request):
     logger.info("Processing request")
 ```
 
-run.py
 ```python
-该服务下的其他程序，可直接logger.info(). trace_id, message_source均会记录下来。
+该服务下的其他程序: function1.py，可直接logger.info(). trace_id, message_source均会记录下来。
 from liblogging import logger
 
 def test(name):
