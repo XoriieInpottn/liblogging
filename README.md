@@ -25,10 +25,11 @@ pip install liblogging
     **extra_message
 }
 ```
+上述日志信息均以json字符串的形式记录下来，方便存储及后续处理。
 
 ### 配置上下文变量，无须重复传参显示记录
-通过装饰器形式, 指定需要配置的全局上下文变量。仅需在整个程序/服务入口配置一次即可。
-
+通过装饰器形式, 指定需要配置的全局上下文变量, 仅需在整个程序/服务入口配置一次即可。
+需要注意的是配置的全局上下文变量，根据加入装饰器下的函数入参名称匹配进行更新，推荐使用函数参数定义使用BaseModel。
 service1.py
 ```python
 主程序/服务
@@ -42,7 +43,7 @@ class Request(BaseModel):
     trace_id: str
 
 #在主程序入口配置了trace_id这一全局上下文变量，会通过函数入参对该字段进行赋值，后续在该服务下的其他程序logger.info时会读取这一变量并记录下来。
-#同时也支持以关键字参数配置默认的message_source。
+#同时也支持默认参数配置，比如message_source设置了默认值，后续使用logger会记录message_source为"demo"。
 @log_request("trace_id", message_source="demo")
 def your_service_entry(request: Request):
     logger.info("Processing request")
@@ -68,7 +69,8 @@ kafka 配置文件格式：
             "bootstrap_servers": "server1, server2, server3",
             "username": "username",
             "password": "******",
-            "topic": "your topic"
+            "topic": "your topic",
+            "...": "..."
         }
     }
 }
