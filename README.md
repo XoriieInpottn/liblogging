@@ -93,3 +93,4 @@ tee {log_file_path} 可以将你的程序记录（输出+错误）重定向到�
 ## 💡Tips
 
 1. If using Kafka to send messages, please use `pip install liblogging[collector]`.
+2. 推荐消息都写在message中，需要后续进行查询的，以字典形式记录，比如logger.info({"key": "value"}), 便于后续查找，而且维护到一列节省内存空间。
