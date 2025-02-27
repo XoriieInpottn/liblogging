@@ -35,6 +35,6 @@ class DemoTool:
         # 增加其他日志字段, 按照关键字参数传入
         logger.track_start(message="my track start", message_type="my_start", data={"name": "我自己定义的start"})
         logger.track_end(
-            message="my track end", message_type="my_start", data={"name": "end", "duration": time.time() - start_time}
+            message="my track end", message_type="my_end", data={"name": "end", "duration": time.time() - start_time}
         )
         return Response(result="hello world")
