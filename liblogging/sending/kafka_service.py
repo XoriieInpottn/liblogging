@@ -17,6 +17,7 @@ class KafkaService:
 
     def __init__(self, config):
         bootstrap_servers = config["bootstrap_servers"].split(",")
+        print(f"kafka config: {config}")
         self.producer = KafkaProducer(
             bootstrap_servers=bootstrap_servers,
             key_serializer=lambda k: json.dumps(k).encode(),
@@ -70,6 +71,7 @@ class KafkaServiceFactory:
     ):
         with open(config_path, 'r') as f:
             config = json.load(f)
+        kafka_config = config[cluster_name][env]
         if ssl_cafile:
-            config["ssl_cafile"] = ssl_cafile
-        return KafkaService(config[cluster_name][env])
+            kafka_config["ssl_cafile"] = ssl_cafile
+        return KafkaService(kafka_config)
