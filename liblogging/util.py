@@ -58,7 +58,7 @@ def split_trace_id(trace_id: str, combine_symbol: str = "+") -> Tuple:
     if len(parts) == 3 or len(parts) == 4:  # 包含时间戳时长度为4
         try:
             uid, session_id, turn = parts[:3]
-            return trace_id, {"uid": uid, "session_id": session_id, "turn": turn}
+            return trace_id, {"uid": uid, "session_id": session_id, "turn": int(turn)}
         except ValueError:
             pass
     return trace_id, {}
