@@ -94,13 +94,14 @@ def main():
     )
     parser.add_argument("--ssl-cafile", type=str, required=True, help="ssl_cafile path")
     parser.add_argument(
-        "--use-default-process",
-        type=bool,
+        "--disable-default-process",
+        action='store_false',
+        dest='use_default_process',
         default=True,
-        help="whether user default process. you can also use another function to process message by redirecting")
+        help="Disable default message processing. Use this flag when you want to process messages with your own function.")
 
     args = parser.parse_args()
-
+    print(args)
     log_collector = LogCollector(args)
     log_collector.collect(
         send_kafka=args.send_kafka, chat_env=args.env, use_default_process=args.use_default_process
