@@ -48,12 +48,29 @@ except ImportError:
     tqdm = None
     from logging import StreamHandler
 
+_old_thread_init = threading.Thread.__init__
+
+
+def _wrapped_thread_init(self, *args, **kwargs):
+    co_local = thread_local._co_local.get()
+    if co_local is not None:
+        setattr(self, "_dict_for_logging", {**co_local})
+    return _old_thread_init(self, *args, **kwargs)
+
+
+threading.Thread.__init__ = _wrapped_thread_init
+
 
 class ThreadCoroutineLocal(threading.local):
 
     def __init__(self):
         super().__init__()
         self._co_local = ContextVar[Optional[Dict]]("_co_local", default=None)
+        ct = threading.current_thread()
+        if hasattr(ct, "_dict_for_logging"):
+            co_local = self.co_local
+            for k, v in getattr(ct, "_dict_for_logging").items():
+                co_local[k] = v
 
     @property
     def co_local(self):
@@ -186,14 +203,14 @@ class Logger(logging.Logger):
             self.addHandler(console_handler)
 
     def track_start(
-        self, message: Union[str, Mapping], message_type: str = "on_track_start", stacklevel: int = 2, **kwargs
+            self, message: Union[str, Mapping], message_type: str = "on_track_start", stacklevel: int = 2, **kwargs
     ):
         self._log(
             logging.INFO, {"message": message, "message_type": message_type, **kwargs}, (), stacklevel=stacklevel
         )
 
     def track_end(
-        self, message: Union[str, Mapping], message_type: str = "on_track_end", stacklevel: int = 2, **kwargs
+            self, message: Union[str, Mapping], message_type: str = "on_track_end", stacklevel: int = 2, **kwargs
     ):
         self._log(
             logging.INFO, {"message": message, "message_type": message_type, **kwargs}, (), stacklevel=stacklevel
@@ -228,12 +245,12 @@ class Logger(logging.Logger):
         )
 
     def llm_start(
-        self,
-        llm_chain_name: str,
-        messages: Sequence[Mapping],
-        template_info: Mapping,
-        model_kwargs: Mapping = None,
-        **kwargs
+            self,
+            llm_chain_name: str,
+            messages: Sequence[Mapping],
+            template_info: Mapping,
+            model_kwargs: Mapping = None,
+            **kwargs
     ):
         log_info_dict = {
             "func_name": llm_chain_name,
@@ -249,14 +266,14 @@ class Logger(logging.Logger):
         )
 
     def llm_end(
-        self,
-        llm_name: str,
-        content: str,
-        execute_time: float,
-        completion_tokens: int = None,
-        prompt_tokens: int = None,
-        role: str = "assistant",
-        **kwargs
+            self,
+            llm_name: str,
+            content: str,
+            execute_time: float,
+            completion_tokens: int = None,
+            prompt_tokens: int = None,
+            role: str = "assistant",
+            **kwargs
     ):
         log_info_dict = {
             "func_name": llm_name,
