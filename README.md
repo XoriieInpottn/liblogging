@@ -1,4 +1,5 @@
 # liblogging
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/XoriieInpottn/liblogging)
 
 Utilities for logging and sending logs.
 ```shell
