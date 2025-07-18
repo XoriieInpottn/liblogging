@@ -150,12 +150,18 @@ class ContextJSONFormatter(Formatter):
             "line_info": f"{record.filename}:{record.lineno}:{record.funcName}",
             # 日志消息
             "message": message,
-            # 通过上下文变量控制不同源, 比如对话，额外算法服务: 历史标题，欢迎语，Planning等
+            # 通过上下文变量控制不同源, 比如Intent，Planning等，写入不同的表
             "message_source": context.get("message_source", "chat_log"),
             # 控制不同log类型，便于筛选日志数据, 比如tool, llm, turn等
             "message_type": message_type,
             **extra_message
         }
+        # 自动将 context 里未出现在 log_data/extra_message 的 key 加入 extra_message
+        for k, v in context.items():
+            if k not in log_data and k not in extra_message:
+                extra_message[k] = v
+        # 重新组装 log_data，确保 extra_message 最新
+        log_data.update(extra_message)
         try:
             output_log = json.dumps(log_data, ensure_ascii=False)
         except TypeError:
