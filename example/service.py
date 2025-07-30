@@ -32,5 +32,5 @@ if __name__ == "__main__":
     raise SystemExit(main())
 
 
-# python -m example.service
+# python -u -m example.service
 # python example/client.py

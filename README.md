@@ -79,7 +79,7 @@ kafka 配置文件格式：
 
 使用形式:
 ```shell
-python service 2>&1 | tee {log_file_path} | liblogging_collector --config-path {your_kafka_path}  --ssl-cafile {your_ssl_cafile_path} --send-kafka
+python -u service 2>&1 | tee {log_file_path} | liblogging_collector --config-path {your_kafka_path}  --ssl-cafile {your_ssl_cafile_path} --send-kafka
 ```
 tee {log_file_path} 可以将你的程序记录（输出+错误）重定向到文件中（可选）。
 
@@ -95,3 +95,71 @@ tee {log_file_path} 可以将你的程序记录（输出+错误）重定向到�
 
 1. If using Kafka to send messages, please use `pip install liblogging[collector]`.
 2. 如果需要数据持久化，推荐日志消息都写在message列中，维护一列节省内存空间。需要后续进行查询的，以字典形式记录，比如logger.info({"key": "value"}), 便于后续查找。
+
+3. 当前默认的trace_id，推荐使用[libentry](https://github.com/XoriieInpottn/libentry)中的`get_trace_id`函数，该函数会根据请求对象的`uid`, `session_id`, `turn`等字段生成trace_id，默认的[log_collector.py](liblogging/sending/log_collector.py)也会根据trace_id拆解`uid`, `session_id`, `turn`，根据`create_time`拆解`create_date`，方便后续进行追溯以及数据存储。以下是构建trace_id的在整个服务入口的示例：
+```python
+from libentry import get_trace_id
+
+class Request(BaseModel):
+    uid: str = Field(..., description="用户id")
+    session_id: str = Field(..., description="会话id")
+    turn: int = Field(..., description="轮次")
+    trace_id: str = Field(..., description="trace_id")
+
+@log_request("trace_id", "message_source")
+def set_logger_global_vars(trace_id: str, message_source: str):
+    print(f"setting global vars: trace_id={trace_id}, message_source={message_source}")
+
+def run():
+    trace_id = get_trace_id(request)
+    # 设置全局上下文变量, 这里注意需要以trace_id=xxx, message_source=xxx形式显式传入
+    set_logger_global_vars(trace_id=trace_id, message_source="demo")
+    request.trace_id = trace_id
+    # 可以直接给其他服务传入request对象，后续的logger.info会自动记录trace_id，其他服务需要在服务入口使用@log_request装饰器配置trace_id, message_source等全局上下文变量。可见example/service.py
+    your_service_entry(request)
+
+if __name__ == "__main__":
+    run()
+```
+
+由log_collector.py默认的数据表结构如下（如果有额外的字段，创建表时和log时的key保持一致即可）：
+```sql
+CREATE TABLE `agent_log`.`your_table_name(需要和message_source一致)` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `uid` varchar(64) NOT NULL DEFAULT '',
+  `session_id` varchar(128) NOT NULL DEFAULT '',
+  `turn` smallint NOT NULL DEFAULT '0',
+  `trace_id` varchar(255) NOT NULL DEFAULT '',
+  `create_date` date NOT NULL,
+  `create_time` datetime(3) NOT NULL,
+  `insert_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '插入时间',
+  `line_info` varchar(255) NOT NULL DEFAULT '' COMMENT '对应代码行信息',
+  `message_source` varchar(64) NOT NULL DEFAULT '' COMMENT '消息来源：plan, memory, intent, guess question等，对应表名',
+  `message_type` varchar(32) NOT NULL DEFAULT '' COMMENT '消息类型, 可以筛选该key获取相关指标信息',
+  `message` text,
+  `level` varchar(32) NOT NULL DEFAULT '' COMMENT 'info， warning, error等',
+  PRIMARY KEY (`id`,`create_date`),
+  KEY `session_id_index` (`session_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+PARTITION BY RANGE (TO_DAYS(create_date)) (
+    PARTITION p202507 VALUES LESS THAN (TO_DAYS('2025-08-01')),
+    PARTITION p202508 VALUES LESS THAN (TO_DAYS('2025-09-01')),
+    PARTITION p202509 VALUES LESS THAN (TO_DAYS('2025-10-01')),
+    PARTITION p202510 VALUES LESS THAN (TO_DAYS('2025-11-01')),
+    PARTITION p202511 VALUES LESS THAN (TO_DAYS('2025-12-01')),
+    PARTITION p202512 VALUES LESS THAN (TO_DAYS('2026-01-01')),
+    PARTITION p202601 VALUES LESS THAN (TO_DAYS('2026-02-01')),
+    PARTITION p202602 VALUES LESS THAN (TO_DAYS('2026-03-01')),
+    PARTITION p202603 VALUES LESS THAN (TO_DAYS('2026-04-01')),
+    PARTITION p202604 VALUES LESS THAN (TO_DAYS('2026-05-01')),
+    PARTITION p202605 VALUES LESS THAN (TO_DAYS('2026-06-01')),
+    PARTITION p202606 VALUES LESS THAN (TO_DAYS('2026-07-01')),
+    PARTITION p202607 VALUES LESS THAN (TO_DAYS('2026-08-01')),
+    PARTITION p202608 VALUES LESS THAN (TO_DAYS('2026-09-01')),
+    PARTITION p202609 VALUES LESS THAN (TO_DAYS('2026-10-01')),
+    PARTITION p202610 VALUES LESS THAN (TO_DAYS('2026-11-01')),
+    PARTITION p202611 VALUES LESS THAN (TO_DAYS('2026-12-01')),
+    PARTITION p202612 VALUES LESS THAN (TO_DAYS('2027-01-01')),
+    PARTITION pMaxRange VALUES LESS THAN MAXVALUE
+);
+```
