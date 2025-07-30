@@ -96,9 +96,9 @@ tee {log_file_path} 可以将你的程序记录（输出+错误）重定向到�
 1. If using Kafka to send messages, please use `pip install liblogging[collector]`.
 2. 如果需要数据持久化，推荐日志消息都写在message列中，维护一列节省内存空间。需要后续进行查询的，以字典形式记录，比如logger.info({"key": "value"}), 便于后续查找。
 
-3. 当前默认的trace_id，推荐使用[libentry](https://github.com/XoriieInpottn/libentry)中的`get_trace_id`函数，该函数会根据请求对象的`uid`, `session_id`, `turn`等字段生成trace_id，默认的[log_collector.py](liblogging/sending/log_collector.py)也会根据trace_id拆解`uid`, `session_id`, `turn`，根据`create_time`拆解`create_date`，方便后续进行追溯以及数据存储。以下是构建trace_id的在整个服务入口的示例：
+3. 当前默认的trace_id，推荐使用[liblogging/util.py](liblogging/util.py)中的`get_trace_id`函数，该函数会根据请求对象的`uid`, `session_id`, `turn`等字段生成trace_id，默认的[liblogging/sending/log_collector.py](liblogging/sending/log_collector.py)也会根据trace_id拆解`uid`, `session_id`, `turn`，根据`create_time`拆解`create_date`，方便后续进行追溯以及数据存储。以下是构建trace_id的在整个服务入口的示例：
 ```python
-from libentry import get_trace_id
+from liblogging.util import get_trace_id
 
 class Request(BaseModel):
     uid: str = Field(..., description="用户id")
