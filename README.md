@@ -124,15 +124,18 @@ if __name__ == "__main__":
 
 4. liblogging提供了一些常用的，比如logger.tool_start, logger.tool_end, logger.track_start, logger.track_end等。
 
-(1) 默认message列就是当使用`logger.info(<message>)`时，message的值。
-(2) 从本质上可以理解为当info的内容是字典时，字典的key就是表中的列名，value就是列的值，而使用liblogging默认这一套 `trace_id`, ``create_time`, `create_date`, `uid`, `session_id`, `turn`等字段会自动添加.
-(3) 如果需要统计相应的字段推荐这种方式，方便后续进行查询。
+    (1) 默认message列就是当使用`logger.info(<message>)`时，message的值。
+
+    (2) 从本质上可以理解为当info的内容是字典时，字典的key就是表中的列名，value就是列的值，而使用liblogging默认这一套 `trace_id`, ``create_time`, `create_date`, `uid`, `session_id`, `turn`等字段会自动添加.
+
+    (3) 如果需要统计相应的字段推荐这种方式，方便后续进行查询。
 ```python
 logger.info({
     "message": {"key1": "value1", "key2": "value2"},  # message列的内容，liblogging将json序列化后存储
     "message_type": "<your message_type>"  # message_type列方便后续进行查询
 })
 ```
+
 
 由log_collector.py默认的数据表结构如下（如果有额外的字段，创建表时和log时的key保持一致即可）：
 ```sql
