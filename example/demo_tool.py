@@ -24,6 +24,7 @@ class DemoTool:
         logger.info("this is a demo tool")
         # 使用logger.info 增加其他日志字段，请用字典形式传入，字典中须包含message，然后添加其他字段。
         # 如下所示的"data"字段, 此外"message_type"字段也通过这种方式自定义，可用于区分不同的日志类型。默认为"common""
+        # 可以理解为info的字典的key就是表中的列名，value就是列的值。trace_id, create_time, create_date, uid, session_id, turn等字段会自动添加。
         logger.info({
             "message": "this is a demo tool",
             "data": {"name": "添加额外的日志字段"},
