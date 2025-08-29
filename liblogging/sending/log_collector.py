@@ -53,9 +53,10 @@ class LogCollector:
     ):
         while True:
             try:
-                line = sys.stdin.readline().strip()
+                line = sys.stdin.readline()
                 if not line:
-                    continue
+                    break
+                line = line.strip()
                 try:
                     if use_default_process:
                         trace_id, message = process_message(line)
