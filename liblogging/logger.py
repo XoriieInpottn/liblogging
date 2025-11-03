@@ -284,7 +284,7 @@ class Logger(logging.Logger):
         log_info_dict = {
             "func_name": llm_name,
             "response": {"role": role, "content": content},
-            "generated_tokens": completion_tokens,
+            "completion_tokens": completion_tokens,
             "prompt_tokens": prompt_tokens,
             "duration": round(execute_time, 3)
         }
