@@ -53,7 +53,11 @@ def sending_loop(queue: Queue[dict], config: CollectorConfig):
             if time() - t > max_wait_time:
                 break
 
-        client.insert_many(buffer)
+        if buffer[-1] is not None:
+            client.insert_many(buffer)
+        else:
+            client.insert_many(buffer[:-1])
+            break
 
 
 def process_message(line):
@@ -81,8 +85,7 @@ def main():
 
     sending_thread = Thread(
         target=sending_loop,
-        kwargs=dict(queue=queue, config=config),
-        daemon=True
+        kwargs=dict(queue=queue, config=config)
     )
     sending_thread.start()
 
@@ -104,6 +107,10 @@ def main():
         except Exception as e:
             print(f"Unexpected error: {e}", file=sys.stderr)
             continue
+
+    queue.put(None)
+    sending_thread.join()
+    print("Mongo collector exited.", file=sys.stderr)
     return 0
 
 
