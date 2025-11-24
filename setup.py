@@ -15,10 +15,11 @@ if __name__ == '__main__':
         ],
         entry_points={
             'console_scripts': [
-                'liblogging_collector = liblogging.sending.log_collector:main'
+                'liblogging_collector = liblogging.sending.log_collector:main',
+                "liblogging_mongo_collector = liblogging.collector.mongo:main"
             ]
         },
-        version='0.1.16',
+        version='0.2.0',
         description='Utilities for logging and sending logs.',
         long_description_content_type='text/markdown',
         long_description=long_description,

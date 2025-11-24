@@ -167,7 +167,7 @@ class ContextJSONFormatter(Formatter):
         except TypeError:
             log_data["message"] = str(log_data["message"])
             output_log = json.dumps(log_data, ensure_ascii=False)
-        return output_log
+        return f"\n{output_log}\n"
 
     def formatTime(self, record):
         """to match mysql 'datetime(3)' format"""
