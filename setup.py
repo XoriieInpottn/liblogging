@@ -20,7 +20,7 @@ if __name__ == '__main__':
                 "liblogging_mongo_collector = liblogging.collector.mongo:main"
             ]
         },
-        version='0.2.2',
+        version='0.2.3',
         description='Utilities for logging and sending logs.',
         long_description_content_type='text/markdown',
         long_description=long_description,

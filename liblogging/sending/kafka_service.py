@@ -18,6 +18,8 @@ class KafkaService:
     def __init__(self, config):
         bootstrap_servers = config["bootstrap_servers"].split(",")
         print(f"kafka config: {config}")
+        self.default_send_timeout = config.get("send_timeout_seconds", 2)
+        self.send_timeout_increment = config.get("send_timeout_increment", 1)
         self.producer = KafkaProducer(
             bootstrap_servers=bootstrap_servers,
             key_serializer=lambda k: json.dumps(k).encode(),
@@ -44,22 +46,27 @@ class KafkaService:
         message: Dict,
         source: str,
         key: str = None,
-        topic: str = None
+        topic: str = None,
+        timeout: float = None
     ):
         if topic is None:
             topic = self.topic
         message["source"] = source
-        for _ in range(3):
+        current_timeout = timeout or self.default_send_timeout
+        for attempt in range(1, 4):
             try:
                 future = self.producer.send(
                     topic,
                     value=message,
                     key=key
                 )
-                future.get(timeout=1)
+                future.get(timeout=current_timeout)
+                print(f"Kafka send succeeded on attempt {attempt} (timeout={current_timeout}s)")
                 return True
             except Exception as e:
                 print(traceback.format_exc())
+                current_timeout += self.send_timeout_increment
+        print(f"Kafka send failed after retries (final timeout={current_timeout}s)")
         return False
 
 
